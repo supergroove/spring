@@ -1,18 +1,20 @@
 package com.user.dao;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-
-import javax.sql.DataSource;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
 import com.user.domain.User;
 
+public interface UserDao {
+	public void add(User user);
+	public User get(String id);
+	public List<User> getAll();
+	public void deleteAll();
+	public int getCount();
+	public void update(User user1);
+}
+
+/*
 public class UserDao {
 
 	private JdbcTemplate jdbcTemplate;
@@ -57,3 +59,4 @@ public class UserDao {
 	}
 	
 }
+*/
