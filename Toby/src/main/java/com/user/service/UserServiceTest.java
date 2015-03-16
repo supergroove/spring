@@ -7,16 +7,24 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.sql.DataSource;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import com.user.dao.UserDao;
 import com.user.domain.Level;
@@ -29,19 +37,25 @@ import com.user.service.UserService.TestUserServiceException;
 public class UserServiceTest {
 	
 	@Autowired
+	PlatformTransactionManager transactionManager;
+	@Autowired
+	DataSource dataSource;
+	@Autowired
 	UserService userService;
 	@Autowired
 	private UserDao userDao;
+	@Autowired
+	MailSender mailSender;
 	
 	List<User> users;
 	
 	@Before
 	public void setUp() {
-		users = Arrays.asList(new User("bumjin", "박범진", "p1", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER - 1, 0),
-							  new User("joytouch", "강명성", "p2", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER, 0),
-							  new User("erwins", "신승한", "p3", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD - 1),
-							  new User("madnite1", "이상호", "p4", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD),
-							  new User("green", "오민규", "p5", Level.GOLD, 100, Integer.MAX_VALUE)
+		users = Arrays.asList(new User("bumjin", "박범진", "p1", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER - 1, 0, "test@test.com"),
+							  new User("joytouch", "강명성", "p2", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER, 0, "test@test.com"),
+							  new User("erwins", "신승한", "p3", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD - 1, "test@test.com"),
+							  new User("madnite1", "이상호", "p4", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD, "test@test.com"),
+							  new User("green", "오민규", "p5", Level.GOLD, 100, Integer.MAX_VALUE, "test@test.com")
 							);
 	}
 	
@@ -51,11 +65,15 @@ public class UserServiceTest {
 	} 
 	
 	@Test
-	public void upgradeLevels() {
+	@DirtiesContext
+	public void upgradeLevels() throws Exception {
 		userDao.deleteAll();
 		
 		for(User user : users)
 			userDao.add(user);
+		
+		MockMailSender mockMailSender = new MockMailSender();
+		userService.setMailSender(mockMailSender);
 		
 		userService.upgradeLevels(); 
 		
@@ -65,11 +83,10 @@ public class UserServiceTest {
 		checkLevelUpgraded(users.get(3), true);
 		checkLevelUpgraded(users.get(4), false);
 		
-//		checkLevel(users.get(0), Level.BASIC);
-//		checkLevel(users.get(1), Level.SILVER);
-//		checkLevel(users.get(2), Level.SILVER);
-//		checkLevel(users.get(3), Level.GOLD);
-//		checkLevel(users.get(4), Level.GOLD);
+		List<String> request = mockMailSender.getRequests();
+		assertThat(request.size(), is(2));
+		assertThat(request.get(0), is(users.get(1).getEmail()));
+		assertThat(request.get(1), is(users.get(3).getEmail()));
 	}   
 	
 	private void checkLevelUpgraded(User user, boolean upgraded) {
@@ -100,9 +117,12 @@ public class UserServiceTest {
 	} 
 	
 	@Test
-	public void upgradeAllOrNothing() {
+	public void upgradeAllOrNothing() throws Exception {
 		UserService testUserService = new TestUserService(users.get(3).getId());
 		testUserService.setUserDao(this.userDao); 
+		testUserService.setTransactionManager(transactionManager);
+		testUserService.setMailSender(mailSender);
+		
 		userDao.deleteAll();
 		
 		for(User user : users)
@@ -127,6 +147,22 @@ public class UserServiceTest {
 	private void checkLevel(User user, Level expectedLevel) {
 		User userUpdate = userDao.get(user.getId());
 		assertThat(userUpdate.getLevel(), is(expectedLevel));
+	}
+	
+	static class MockMailSender implements MailSender {
+		private List<String> requests = new ArrayList<String> ();
+		
+		public List<String> getRequests() {
+			return requests;
+		}
+
+		public void send(SimpleMailMessage mailMessage) throws MailException {
+			requests.add(mailMessage.getTo() [0]);
+		}
+
+		public void send(SimpleMailMessage[] mailMessage) throws MailException {
+			
+		}
 	}
 	
 }
