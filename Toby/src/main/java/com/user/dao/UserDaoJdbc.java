@@ -3,6 +3,7 @@ package com.user.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -11,10 +12,29 @@ import org.springframework.jdbc.core.RowMapper;
 
 import com.user.domain.Level;
 import com.user.domain.User;
+import com.user.sqlservice.SqlService;
 
 public class UserDaoJdbc implements UserDao {
-
-private JdbcTemplate jdbcTemplate;
+	
+	private SqlService sqlService;
+	
+	public void setSqlService(SqlService sqlService) {
+		this.sqlService = sqlService;
+	}
+	
+//	private Map<String, String> sqlMap;
+//	
+//	public void setSqlMap(Map<String, String> sqlMap) {
+//		this.sqlMap = sqlMap;
+//	}
+	
+//	private String sqlAdd;
+//	
+//	public void setSqlAdd(String sqlAdd) {
+//		this.sqlAdd = sqlAdd;
+//	}
+	
+	private JdbcTemplate jdbcTemplate;
 	
 	private RowMapper<User> userMapper = new RowMapper<User> () {
 
@@ -37,31 +57,47 @@ private JdbcTemplate jdbcTemplate;
 	}
 
 	public void add(final User user) {		
-		this.jdbcTemplate.update("insert into users(id, name, password, level, login, recommend, email) values(?, ?, ?, ?, ?, ?, ?)", user.getId(), user.getName(), user.getPassword(), user.getLevel().intValue(), user.getLogin(), user.getRecommend(), user.getEmail());
+		this.jdbcTemplate.update(
+				//"insert into users(id, name, password, level, login, recommend, email) values(?, ?, ?, ?, ?, ?, ?)",
+//				this.sqlMap.get("add"),
+				this.sqlService.getSql("userAdd"),
+				user.getId(), user.getName(), user.getPassword(), user.getEmail(), user.getLevel().intValue(), user.getLogin(), user.getRecommend());
 	}
 
 	public User get(String id) {
-		return this.jdbcTemplate.queryForObject("select * from users where id = ?", 
+		return this.jdbcTemplate.queryForObject(
+//				this.sqlMap.get("get"),
+				this.sqlService.getSql("userGet"),
 				new Object[] {id},
 				this.userMapper);
 	}   
 	
 	public List<User> getAll() {
-		return this.jdbcTemplate.query("select * from users order by id",
+		return this.jdbcTemplate.query(
+//				this.sqlMap.get("getAll"),
+				this.sqlService.getSql("userGetAll"),
 				this.userMapper);
 	}
 	
 	public void deleteAll() {
-		this.jdbcTemplate.update("delete from users");
+		this.jdbcTemplate.update(
+//				this.sqlMap.get("deleteAll")
+				this.sqlService.getSql("userDeleteAll")
+				);
 	} 
 	
 	public int getCount() {
-		return this.jdbcTemplate.queryForInt("select count(*) from users");
+		return this.jdbcTemplate.queryForInt(
+//				this.sqlMap.get("getCount")
+				this.sqlService.getSql("userGetCount")
+				);
 	}
 
 	public void update(User user) {
-		this.jdbcTemplate.update("update users set name = ?, password = ?, level = ?, login = ?, " + 
-	                             "recommend = ? where id = ? ", user.getName(), user.getPassword(), user.getLevel().intValue(), user.getLogin(), user.getRecommend(), user.getId());
+		this.jdbcTemplate.update(
+//			this.sqlMap.get("update"),
+			this.sqlService.getSql("userUpdate"),
+			user.getName(), user.getPassword(), user.getEmail(), user.getLevel().intValue(), user.getLogin(), user.getRecommend(), user.getId());
 	}
 
 }

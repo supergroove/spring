@@ -6,13 +6,9 @@ import static org.junit.Assert.assertThat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import com.user.dao.UserDao;
 import com.user.domain.Level;
 import com.user.domain.User;
-import com.user.service.UserService.TestUserService;
-import com.user.service.UserService.TestUserServiceException;
 
 public class UserTest {
 	
